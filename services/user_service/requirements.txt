@@ -1,0 +1,15 @@
+asgiref==3.13.0
+Django==5.2.19
+django-jalali==7.4.0
+django-redis==6.0.0
+djangorestframework==3.18.3
+djangorestframework_simplejwt==5.5.1
+jalali_core==1.0.0
+jdatetime==6.1.1
+psycopg==3.3.8
+psycopg2==2.9.13
+PyJWT==2.15.1
+python-dotenv==1.2.4
+redis==7.2.1
+sqlparse==0.6.1
+tzdata==2026.6
