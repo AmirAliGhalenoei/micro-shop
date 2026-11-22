@@ -1,6 +1,8 @@
+import os
 import string
 import random
 from django.core.cache import cache
+from django.core.mail import send_mail
 
 
 def send_otp(phone, code):
@@ -37,4 +39,32 @@ class OTPService:
         return False
 
 
-       
+class EmailOTPService:
+
+    @staticmethod
+    def send_code_for_email(email):
+        code = OTPService.generate_code()
+        otp = cache.set(f"email_{email}_otp", code, timeout=120)
+
+        message = f"Hi Code Verify {code}"
+        subject = "Set Email Account"
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=os.getenv("EMAIL_SENDER"),
+            recipient_list=[email],
+            fail_silently=False
+        )
+        return f"Code send to {email}"
+
+    @staticmethod
+    def verify_email(email,code):
+        otp = cache.get(f"email_{email}_otp")
+
+        if otp and otp == code:
+            print(f"Code Verified")
+            cache.delete(otp)
+            return True
+        else:
+            print(f"Code Invalid")
+            return False

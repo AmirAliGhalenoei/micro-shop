@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
+from datetime import timedelta
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
 
     # included apps
+    "django_jalali",
     "rest_framework",
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -137,6 +139,26 @@ MAILERS = {
     },
 }
 
+# DJANGO-JALALI
+JALALI_SETTINGS = {
+    # JavaScript static files for the admin Jalali date widget
+    "ADMIN_JS_STATIC_FILES": [
+        "admin/jquery.ui.datepicker.jalali/scripts/jquery-1.10.2.min.js",
+        "admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.core.js",
+        "admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc.js",
+        "admin/jquery.ui.datepicker.jalali/scripts/calendar.js",
+        "admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc-fa.js",
+        "admin/main.js",
+    ],
+    # CSS static files for the admin Jalali date widget
+    "ADMIN_CSS_STATIC_FILES": {
+        "all": [
+            "admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css",
+            "admin/css/main.css",
+        ]
+    },
+}
+
 # Redis
 CACHES = {
     "default": {
@@ -152,4 +174,28 @@ REST_FRAMEWORK = {
     )
 }
 
+# Simple JWT
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": os.getenv("SECRET_KEY"), 
+}
+
+# Gmail SMTP
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {
+            "host": "smtp.gmail.com",
+            "port": 587,
+            "username": os.getenv("EMAIL_SENDER"),
+            "password": os.getenv("GMAIL_APP_PASSWORD"),
+            "use_tls": True,
+        },
+    },
+}
+DEFAULT_FROM_EMAIL = "Micro Shop <alighalenoei1383@gmail.com>"
+
+# Custom User
 AUTH_USER_MODEL = "users.User"

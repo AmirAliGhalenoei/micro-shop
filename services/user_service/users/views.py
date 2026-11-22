@@ -2,13 +2,23 @@ from rest_framework import status
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User
+from .models import User, Profile
 from .permissions import NotAuthenticated
-from .otp import OTPService, check_limited
-from .serializers import AuthenticatedSerializer, LoginOrRegisterSerializer, LogoutSerializer
+from .otp import OTPService, EmailOTPService, check_limited
+from .serializers import (
+    LogoutSerializer,
+    EmailVerifySerializer,
+    SetPasswordSerializer,
+    UserProfileSerializer,
+    SetEmailUserSerializer,
+    AuthenticatedSerializer, 
+    LoginOrRegisterSerializer, 
+    EditInformationSerializer,
+)
 
 
 # Authentication Views
@@ -215,6 +225,98 @@ class LogoutView(APIView):
         return Response(serializer_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Profile views
+class UserProfileView(APIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = get_object_or_404(Profile, user=user)
+        serializer_data = self.serializer_class(instance=profile)
+
+        if user.id != profile.user.id:
+            return Response({
+                "message":"You do not have access to this page."
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(data=serializer_data.data, status=status.HTTP_200_OK)
+
+class EditInformationView(APIView):
+    serializer_class = EditInformationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        user = request.user
+        profile = get_object_or_404(Profile, user=user)
+        serializer_data = self.serializer_class(data=request.data, instance=profile)
+
+        if serializer_data.is_valid():
+            serializer_data.save()
+            return Response(data=serializer_data.data, status=status.HTTP_200_OK)
+        return Response(data=serializer_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SetEmailView(APIView):
+    serializer_class = SetEmailUserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer_data = self.serializer_class(data=request.data)
+
+        if not check_limited(f"email_set_{request.user.id}", 3, 120):
+            return Response({"message":"The number of requests has reached the limit. Please try again in an hour."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        if serializer_data.is_valid():
+            email = serializer_data.validated_data.get("email")
+            otp = EmailOTPService.send_code_for_email(email)
+            request.session["email_set_info"] = {"email":email}
+            return Response({"message":otp}, status=status.HTTP_200_OK)
+        return Response(data=serializer_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class EmailVerifyView(APIView):
+    serializer_class = EmailVerifySerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        email_session = request.session["email_set_info"].get("email")
+        serializer_data = self.serializer_class(data=request.data)
+
+        if not email_session:
+            return Response(
+                {"message": "This page is not available. Please start the process over from the beginning."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if serializer_data.is_valid():
+            code = serializer_data.validated_data.get("code")
+            verify = EmailOTPService.verify_email(email_session, code)
+
+            if verify:
+                request.user.user_profile.verified_email = True
+                request.user.user_profile.save()
+                del request.session["email_set_info"]
+                return Response({"message":"email verified"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message":"The entered code is incorrect or invalid."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data=serializer_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SetPasswordAcountView(APIView):
+    serializer_class = SetPasswordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer_data = self.serializer_class(data=request.data)
+
+        if serializer_data.is_valid():
+            password = serializer_data.validated_data.get("password")
+            request.user.set_password(password)
+            request.user.save()
+            return Response({"message":"Your password has been saved successfully."}, status=status.HTTP_200_OK)
+        return Response(data=serializer_data.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+                    
 
 
 

@@ -1,10 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django_jalali.db import models as jmodels
 from django.core.validators import validate_integer
+from django.contrib.auth.models import AbstractUser
 
-from .validators import validate_phone
 from .managers import UserManager
-
+from .validators import validate_phone
 
 
 class User(AbstractUser):
@@ -33,8 +33,12 @@ class Profile(models.Model):
     last_name = models.CharField(max_length=80, null=True, blank=True)
     email = models.EmailField(max_length=80, unique=True, null=True, blank=True)
     password = models.CharField(max_length=256, null=True, blank=True)
-    date_of_birth = models.DateField(null=True, blank=True)
+    date_of_birth = jmodels.jDateField(null=True, blank=True)
+    
     verified_email = models.BooleanField(default=False)
+
+    # django-jalali
+    objects = jmodels.jManager()
 
     def __str__(self):
         return f"{self.user.phone}"
