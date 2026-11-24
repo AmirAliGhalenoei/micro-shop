@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "product_service"]
 
 
 # Application definition
@@ -135,6 +135,14 @@ MAILERS = {
     },
 }
 
+# Redis
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/2",
+    }
+}
+
 
 # ARVAN STORAGE
 STORAGES = {
@@ -148,6 +156,6 @@ STORAGES = {
 
 AWS_ACCESS_KEY_ID = os.getenv("ARVAN_ACCESS_KEY")
 AWS_SECRET_ACCESS_KEY = os.getenv("ARVAN_SECRET_KEY")
-AWS_S3_ENDPOINT_URL = os.getenv("ARVAN_END_POINT")
+AWS_S3_ENDPOINT_URL = "https://s3.ir-central1.arvanstorage.ir"
 AWS_STORAGE_BUCKET_NAME = os.getenv("ARVAN_BUKET_NAME")
 AWS_S3_FILE_OVERWRITE = False
